@@ -99,6 +99,10 @@ def health() -> dict:
     return {"status": "ok", "mode": settings.app_mode}
 
 
+@app.get("/")
+def health():
+    return {"status": "ok"}
+
 @app.get("/api/v1/snapshot", response_model=SnapshotResponse)
 def snapshot(db: Session = Depends(get_db)) -> dict:
     try:
