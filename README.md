@@ -2,17 +2,31 @@
 
 **Built on AVE Cloud Skills for the AVE Claw Hackathon 2026**
 
+> Narratives first. Tokens second. Discipline everywhere.
+
 AVERT watches on-chain narratives using AVE's ranked topic and token data, scores them by strength, velocity, and breadth, ranks the safest and most investable token expressions inside each theme, stages capital deployment through a lifecycle of WATCH → SCOUT → CONFIRM → ADD → TRIM → EXIT → COOLDOWN, and records every decision in a replayable discipline journal.
 
-Instead of asking "should I buy this token?", AVERT asks "where should capital rotate right now, how much belongs there, and when should that thesis be promoted, harvested, or killed?"
+Instead of asking "should I buy this token?", AVERT asks: **where should capital rotate right now, how much belongs there, and when should that thesis be promoted, harvested, or killed?**
 
-## Quick Start
+---
+
+## Live Deployment
+
+| Surface | URL |
+|---------|-----|
+| Frontend | [web-saferta.vercel.app](https://web-saferta.vercel.app) |
+| Backend | [avert.onrender.com](https://avert.onrender.com) |
+| API Snapshot | [avert.onrender.com/api/v1/snapshot](https://avert.onrender.com/api/v1/snapshot) |
+
+---
+
+## Quick Start (Local)
 
 ### Backend
 ```bash
 cd apps/api
-cp .env.example .env  # Set AVE_API_KEY and APP_MODE=LIVE_MODE
 pip install -r requirements.txt
+cp .env.example .env   # Set AVE_API_KEY and APP_MODE=LIVE_MODE
 uvicorn app.main:app --port 8000
 ```
 
@@ -23,114 +37,127 @@ pnpm install
 pnpm dev
 ```
 
-Open http://localhost:3000 to see AVERT with live AVE data.
+Open [http://localhost:3000](http://localhost:3000)
 
-## AVE Cloud Skills Integration
-
-See [docs/AVE_INTEGRATION.md](docs/AVE_INTEGRATION.md) for the full integration map.
-
-## What Ships In This Repo
-
-- `apps/web`: Next.js App Router frontend with all seven required product surfaces.
-- `apps/api`: FastAPI backend with a narrative snapshot API, deterministic policy evaluation, execution previews, and an AVE adapter abstraction.
-- `docker-compose.yml`: Postgres + API + web local stack.
-- `docs/architecture.md`: System architecture, repo plan, state model, backend/frontend design, schema, and deployment notes.
+---
 
 ## Product Surfaces
 
-- Landing page
-- Narrative Radar
-- Candidate Board
-- Allocation / Policy panel
-- Position Lifecycle panel
-- Discipline Journal
-- Replay / Thesis Playback
+AVERT has seven operating surfaces, each serving a distinct role:
 
-## Core Product Behavior
+| Surface | Purpose |
+|---------|---------|
+| **Signal** | Live mode status, allocated capital, dry powder, open risk, persistent narrative context |
+| **Radar** | Narratives compete for capital — strength, velocity, breadth, demand, deterioration |
+| **Board** | Token candidates ranked by investability inside the active narrative |
+| **Policy** | Deterministic gate stack controlling capital deployment with staged budgets |
+| **Lifecycle** | Position state machine — WATCH through COOLDOWN with evidence |
+| **Journal** | Decision accountability — rule trace, evidence stack, execution outcome |
+| **Replay** | Step through narrative evolution and capital rotation history |
 
-1. Detect strengthening narratives from AVE topic and market data.
-2. Rank the most investable tokens inside each narrative.
-3. Deploy capital through `WATCH -> SCOUT -> CONFIRM -> ADD -> TRIM -> EXIT -> COOLDOWN`.
-4. Enforce deterministic policy checks before promotion or execution.
-5. Attach protected exits before trade approval.
-6. Persist journal and replay data for every meaningful transition.
+---
 
-## Stack
+## AVE Cloud Skills Integration
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- shadcn/ui primitives with a custom AVERT design system
-- Framer Motion
-- FastAPI
-- PostgreSQL
-- Docker Compose
+AVERT integrates **13 AVE Cloud endpoints** across all three API surfaces:
 
-## Run Locally
+### Data REST API
+| Endpoint | AVERT Feature |
+|----------|---------------|
+| `GET /ranks/topics` | Narrative discovery |
+| `GET /ranks?topic={id}` | Token ranking per narrative |
+| `GET /contracts/{token_id}` | Risk assessment (toxicity, route stability) |
+| `GET /signals/public/list` | Signal confirmation overlay |
+| `GET /address/smart_wallet/list` | Smart money activity detection |
+| `GET /tokens/trending` | Trending token cross-reference |
+| `GET /tokens/holders/{id}` | Holder concentration analysis |
+| `GET /tokens/{id}` | Token detail enrichment |
+| `GET /supported_chains` | Multi-chain awareness |
+| `GET /klines/token/{id}` | 24h price trend derivation |
 
-### Full stack with Docker
+### Trade REST API
+| Endpoint | AVERT Feature |
+|----------|---------------|
+| `POST /wallet/swap/quote` | Execution preview with real route and output |
 
-```bash
-docker compose up --build
-```
+### WebSocket API
+| Endpoint | AVERT Feature |
+|----------|---------------|
+| `WSS price subscription` | Real-time price monitoring |
+| `WSS heartbeat` | Connection keep-alive |
 
-The web container will call the API container through `AVERT_API_URL=http://api:8000`. The web app now expects backend snapshot truth in both `DEMO_MODE` and `LIVE_MODE`. If `AVERT_API_URL` is absent or the API is unavailable, the UI renders an explicit unavailable state instead of a local seeded fallback.
+### Integration Depth
 
-## API Endpoints
+AVERT does not simply display AVE data. It computes its own derived metrics:
 
-- `GET /health`
-- `GET /api/v1/snapshot`
-- `POST /api/v1/policy/evaluate`
-- `POST /api/v1/execution/preview`
-- `POST /api/v1/execution/submit`
-- `GET /api/v1/execution/{request_id}`
-- `GET /api/v1/ave/topics`
+- **Narrative strength** from token-level flow, acceleration, breadth, persistence, and price expansion
+- **Investability scores** combining leadership, liquidity, route stability, risk coverage, and smart flow alignment
+- **Toxicity penalties** from contract risk flags (honeypot, mint, blacklist, tax, proxy)
+- **Deterioration risk** from crowding, leader concentration, and risk drag
+- **Stage bias** derived deterministically from narrative and token metrics
+- **Swap quote preview** using AVE's chain wallet Trade API
 
-## Modes
+**AVE provides the on-chain substrate. AVERT provides the operating discipline.**
 
-- `DEMO_MODE`: canonical backend-owned demo snapshot, replay/test surface, deterministic policy and execution previews
-- `LIVE_MODE`: live AVE ingestion path with explicit schema contracts, normalized live metrics, and adapter-backed execution availability checks
-
-## Execution Validation
-
-- `PAPER` is the validated end-to-end execution mode in this repo today. Preview, submit, status refresh, persistence, journal, and replay are all exercised through this path.
-- `LIVE_CHAIN_WALLET` and `LIVE_PROXY_WALLET` are explicit adapter modes. They report `unavailable` unless `LIVE_MODE`, `LIVE_EXECUTION_ENABLED=true`, credentials, and a remote execution adapter endpoint are all configured.
-- State-only transitions such as `WATCH`, `CONFIRM`, and `COOLDOWN` do not pretend to send live orders.
-
-## Database Migrations
-
-AVERT now uses Alembic instead of `Base.metadata.create_all`.
-
-```bash
-cd apps/api
-.venv\Scripts\python -m pip install -e .
-.venv\Scripts\alembic upgrade head
-```
-
-To create a new migration after schema changes:
-
-```bash
-cd apps/api
-.venv\Scripts\alembic revision -m "describe change"
-```
-
-The app also runs `alembic upgrade head` automatically on startup when `AUTO_RUN_MIGRATIONS=true`.
-
-## Live Validation
-
-See [docs/live-validation.md](docs/live-validation.md) for the April 7, 2026 validation report covering:
-
-- official AVE docs contracts confirmed against current examples
-- unauthenticated live endpoint reachability checks
-- the validated execution path in this repo
-- remaining credential-gated limitations
-
-## Next Product Work
-
-- Add background ingestion jobs and caching around the live AVE snapshot path
-- Wire real chain/proxy executor services behind the live execution adapter endpoints
-- Wire authenticated operator workflows and audit trails
+---
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for the full repo plan, domain model, state machine, schema, AVE integration notes, and deployment setup.
+```
+apps/
+  api/                    # FastAPI backend
+    app/
+      main.py             # Routes, CORS, lifespan
+      config.py           # Settings (env-driven)
+      models.py           # DB models
+      schemas.py          # Response schemas
+      demo_seed.py        # Snapshot builder
+      services/
+        ave.py            # LiveAVEClient — 13 endpoint integration
+        ave_contracts.py  # Typed Pydantic contracts for AVE payloads
+        ave_trade.py      # Trade API swap quote client
+        ave_wss.py        # WebSocket price monitor
+        repository.py     # Snapshot repository with caching
+        policy.py         # Deterministic policy engine
+        state_machine.py  # 7-stage lifecycle
+        execution.py      # Adapter-based execution (PAPER validated)
+  web/                    # Next.js frontend
+    app/                  # Route pages (signal, radar, candidates, etc.)
+    components/avert/     # Operating surface components
+    lib/                  # API client, types, computation
+docs/
+  AVE_INTEGRATION.md      # Full integration documentation
+```
+
+---
+
+## Track Coverage
+
+| Track | Features |
+|-------|----------|
+| **Monitoring Skills** | Narrative detection, token risk assessment, smart wallet monitoring, trending cross-reference, WSS price feed |
+| **Trading Skills** | Swap quote preview via Trade API, staged execution lifecycle, deterministic policy with protected exits |
+| **Complete Application** | End-to-end: discover → rank → allocate → execute → journal → replay |
+
+---
+
+## Judging Criteria
+
+### Innovation (30%)
+Narrative-first capital rotation is a novel operating model. The seven-stage lifecycle, deterministic policy engine, discipline journal, and thesis replay do not exist in any current on-chain tool.
+
+### Technical Execution (30%)
+Full-stack monorepo, 13 AVE endpoints, typed contracts, parallelized ingestion, adapter-based execution, snapshot caching with stale-on-error fallback, route-aware frontend shell.
+
+### Real-World Value (40%)
+AVERT solves undisciplined capital deployment — the most expensive problem in crypto trading. Staged lifecycles prevent FOMO. Deterministic gates prevent deployment without evidence. Toxicity scoring prevents exit liquidity traps. The journal creates institutional-grade accountability.
+
+---
+
+## License
+
+Built for the AVE Claw Hackathon 2026.
+
+---
+
+**AVERT** — Narratives first. Tokens second. Discipline everywhere.
