@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: avert
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d avert"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    environment:
+      APP_MODE: ${APP_MODE:-DEMO_MODE}
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/avert
+      AVE_API_BASE_URL: https://prod.ave-api.com/v2
+      AVE_API_KEY: ${AVE_API_KEY:-}
+      LIVE_EXECUTION_ENABLED: ${LIVE_EXECUTION_ENABLED:-false}
+      CHAIN_EXECUTOR_BASE_URL: ${CHAIN_EXECUTOR_BASE_URL:-}
+      CHAIN_EXECUTOR_API_KEY: ${CHAIN_EXECUTOR_API_KEY:-}
+      PROXY_EXECUTOR_BASE_URL: ${PROXY_EXECUTOR_BASE_URL:-}
+      PROXY_EXECUTOR_API_KEY: ${PROXY_EXECUTOR_API_KEY:-}
+      CHAIN_WALLET_ADDRESS: ${CHAIN_WALLET_ADDRESS:-}
+      CHAIN_WALLET_PRIVATE_KEY: ${CHAIN_WALLET_PRIVATE_KEY:-}
+      PROXY_WALLET_ID: ${PROXY_WALLET_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      AVERT_API_URL: http://api:8000
+      AVERT_APP_MODE: ${APP_MODE:-DEMO_MODE}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

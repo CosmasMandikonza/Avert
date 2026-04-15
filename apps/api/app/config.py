@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     chain_wallet_address: str | None = None
     chain_wallet_private_key: str | None = None
     proxy_wallet_id: str | None = None
-    cors_allowed_origins: list[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
+    CORS_ALLOWED_ORIGINS: list[str] = [
+        "https://web-saferta.vercel.app",
+        "https://avert-tau-two-93.vercel.app"
     ]
 
 
